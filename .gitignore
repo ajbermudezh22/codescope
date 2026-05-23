@@ -21,3 +21,8 @@ frontend/dist/
 # IDE
 .idea/
 .vscode/
+
+# Eval
+eval/repos/
+eval/results-*.jsonl
+.codescope-*/

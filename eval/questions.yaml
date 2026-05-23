@@ -1,0 +1,92 @@
+# 20-question precision spot-check on fastapi.
+#
+# Each entry needs:
+#   id              — short identifier
+#   q               — natural-language question
+#   expected_symbol — the qualified name that should appear in a correct answer
+#
+# Replace each `TODO: ...` with a real question + symbol you've verified exists
+# in the indexed fastapi. Recommended mix:
+#   - 8 "easy": single-symbol questions answerable via find_symbol alone
+#   - 8 "medium": need at least one callers_of/callees_of hop
+#   - 4 "hard": need read_source or multi-hop traversal
+
+- id: q01
+  q: "Which function generates the OpenAPI schema?"
+  expected_symbol: "fastapi.openapi.utils.get_openapi"
+
+- id: q02
+  q: "How are dependencies resolved during a request?"
+  expected_symbol: "fastapi.dependencies.utils.solve_dependencies"
+
+- id: q03
+  q: "Where is OAuth2 / token authentication defined?"
+  expected_symbol: "fastapi.security.oauth2"
+
+- id: q04
+  q: "TODO: a 'find the routing logic' style question"
+  expected_symbol: "fastapi.routing.APIRoute"
+
+- id: q05
+  q: "TODO: a 'find the exception handler' style question"
+  expected_symbol: "fastapi.exception_handlers"
+
+- id: q06
+  q: "TODO"
+  expected_symbol: "TODO"
+
+- id: q07
+  q: "TODO"
+  expected_symbol: "TODO"
+
+- id: q08
+  q: "TODO"
+  expected_symbol: "TODO"
+
+- id: q09
+  q: "TODO"
+  expected_symbol: "TODO"
+
+- id: q10
+  q: "TODO"
+  expected_symbol: "TODO"
+
+- id: q11
+  q: "TODO"
+  expected_symbol: "TODO"
+
+- id: q12
+  q: "TODO"
+  expected_symbol: "TODO"
+
+- id: q13
+  q: "TODO"
+  expected_symbol: "TODO"
+
+- id: q14
+  q: "TODO"
+  expected_symbol: "TODO"
+
+- id: q15
+  q: "TODO"
+  expected_symbol: "TODO"
+
+- id: q16
+  q: "TODO"
+  expected_symbol: "TODO"
+
+- id: q17
+  q: "TODO"
+  expected_symbol: "TODO"
+
+- id: q18
+  q: "TODO"
+  expected_symbol: "TODO"
+
+- id: q19
+  q: "TODO"
+  expected_symbol: "TODO"
+
+- id: q20
+  q: "TODO"
+  expected_symbol: "TODO"
