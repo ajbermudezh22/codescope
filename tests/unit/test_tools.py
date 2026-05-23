@@ -51,3 +51,13 @@ def test_callees_of_returns_known_callee(indexed_tiny):
     callees = tools.callees_of(hit.symbol_id, depth=1)
     qns = [c.callee_qualified_name for c in callees]
     assert "tiny.auth.verify_token" in qns
+
+
+def test_read_source_returns_file_slice(indexed_tiny):
+    tools = Tools.open(indexed_tiny)
+    [hit] = [h for h in tools.find_symbol("verify token", k=5)
+             if h.qualified_name == "tiny.auth.verify_token"]
+    slice_ = tools.read_source(hit.symbol_id, with_context_lines=0)
+    assert "def verify_token" in slice_.source
+    assert "Return True if the token is valid" in slice_.source
+    assert slice_.qualified_name == "tiny.auth.verify_token"

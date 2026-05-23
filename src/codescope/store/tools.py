@@ -31,7 +31,12 @@ class Tools:
         kconn = kuzu.Connection(kdb)
         ldb = lancedb.connect(str(db_dir / "vec.lance"))
         table = ldb.open_table("symbols")
-        repo_root = Path.cwd()  # W1-11 will replace this with repo_root.txt read
+        repo_root_file = db_dir / "repo_root.txt"
+        repo_root = (
+            Path(repo_root_file.read_text().strip())
+            if repo_root_file.exists()
+            else Path.cwd()
+        )
         return cls(kconn, table, Embedder(), repo_root)
 
     def find_symbol(
@@ -122,3 +127,30 @@ class Tools:
             )
             for _, row in df.iterrows()
         ]
+
+    # --- read_source -----------------------------------------------------
+
+    def read_source(self, symbol_id: str, with_context_lines: int = 0) -> SourceSlice:
+        df = self._kuzu.execute(
+            "MATCH (s:Symbol) WHERE s.id = $id "
+            "RETURN s.qualified_name AS qn, s.file AS file, "
+            "s.start_line AS start_ln, s.end_line AS end_ln",
+            {"id": symbol_id},
+        ).get_as_df()
+        if len(df) == 0:
+            raise KeyError(f"Symbol not found: {symbol_id}")
+        row = df.iloc[0]
+        file_path = self._repo_root / row["file"]
+        text = file_path.read_text()
+        lines = text.splitlines()
+        start = max(0, int(row["start_ln"]) - with_context_lines)
+        end = min(len(lines), int(row["end_ln"]) + 1 + with_context_lines)
+        source = "\n".join(lines[start:end])
+        return SourceSlice(
+            symbol_id=symbol_id,
+            qualified_name=row["qn"],
+            file=row["file"],
+            start_line=start,
+            end_line=end,
+            source=source,
+        )

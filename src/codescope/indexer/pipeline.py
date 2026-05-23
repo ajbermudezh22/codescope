@@ -43,4 +43,5 @@ def index_repo(repo_path: Path, db_dir: Path, force: bool = False) -> None:
     lw = LanceWriter(db_dir / "vec.lance", embedder=Embedder())
     lw.write(symbols)
 
+    (db_dir / "repo_root.txt").write_text(str(repo_path))
     print(f"Done. Index at {db_dir}")
