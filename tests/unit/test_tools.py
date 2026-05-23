@@ -33,3 +33,21 @@ def test_find_symbol_respects_kind_filter(indexed_tiny):
     hits = tools.find_symbol("function", kind="Function", k=10)
     for h in hits:
         assert h.kind == "Function"
+
+
+def test_callers_of_returns_known_caller(indexed_tiny):
+    tools = Tools.open(indexed_tiny)
+    [hit] = [h for h in tools.find_symbol("verify token", k=5)
+             if h.qualified_name == "tiny.auth.verify_token"]
+    callers = tools.callers_of(hit.symbol_id, depth=1)
+    qns = [c.caller_qualified_name for c in callers]
+    assert "tiny.api.authorize_request" in qns
+
+
+def test_callees_of_returns_known_callee(indexed_tiny):
+    tools = Tools.open(indexed_tiny)
+    [hit] = [h for h in tools.find_symbol("authorize", k=5)
+             if h.qualified_name == "tiny.api.authorize_request"]
+    callees = tools.callees_of(hit.symbol_id, depth=1)
+    qns = [c.callee_qualified_name for c in callees]
+    assert "tiny.auth.verify_token" in qns

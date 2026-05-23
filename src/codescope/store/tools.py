@@ -72,3 +72,53 @@ class Tools:
             if len(out) >= k:
                 break
         return out
+
+    # --- callers / callees ----------------------------------------------
+
+    def callers_of(self, symbol_id: str, depth: int = 1) -> list[CallSite]:
+        depth = max(1, min(depth, 3))
+        df = self._kuzu.execute(
+            f"""
+            MATCH (caller:Symbol)-[:CALLS*1..{depth}]->(callee:Symbol)
+            WHERE callee.id = $id
+            RETURN DISTINCT caller.id AS caller_id,
+                            caller.qualified_name AS caller_qn,
+                            caller.file AS file
+            """,
+            {"id": symbol_id},
+        ).get_as_df()
+        return [
+            CallSite(
+                caller_id=row["caller_id"],
+                caller_qualified_name=row["caller_qn"],
+                callee_id=symbol_id,
+                callee_qualified_name="",
+                file=row["file"],
+                line=0,
+            )
+            for _, row in df.iterrows()
+        ]
+
+    def callees_of(self, symbol_id: str, depth: int = 1) -> list[CallSite]:
+        depth = max(1, min(depth, 3))
+        df = self._kuzu.execute(
+            f"""
+            MATCH (caller:Symbol)-[:CALLS*1..{depth}]->(callee:Symbol)
+            WHERE caller.id = $id
+            RETURN DISTINCT callee.id AS callee_id,
+                            callee.qualified_name AS callee_qn,
+                            callee.file AS file
+            """,
+            {"id": symbol_id},
+        ).get_as_df()
+        return [
+            CallSite(
+                caller_id=symbol_id,
+                caller_qualified_name="",
+                callee_id=row["callee_id"],
+                callee_qualified_name=row["callee_qn"],
+                file=row["file"],
+                line=0,
+            )
+            for _, row in df.iterrows()
+        ]
