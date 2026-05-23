@@ -12,3 +12,12 @@ build/
 node_modules/
 frontend/dist/
 .DS_Store
+
+# Secrets
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
