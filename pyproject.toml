@@ -10,6 +10,7 @@ dependencies = [
   "lancedb>=0.13",
   "fastembed>=0.4",
   "protobuf>=5",
+  "grpcio-tools>=1.50",
   "litellm>=1.50",
   "fastapi>=0.115",
   "uvicorn[standard]>=0.32",

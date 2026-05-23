@@ -20,11 +20,24 @@ class ScipNotInstalledError(RuntimeError):
 
 
 def run_scip(repo_path: Path, output: Path) -> None:
-    """Run `scip-python index` against repo_path, writing to output."""
+    """Run `scip-python index` against repo_path, writing to output.
+
+    Uses ``--cwd`` so that scip-python discovers the pyproject.toml inside
+    ``repo_path`` rather than walking up to a parent project root.  This
+    ensures monikers are rooted at the repo's own package names instead of
+    the parent project's namespace.
+    """
     if not shutil.which("scip-python"):
         raise ScipNotInstalledError()
     output.parent.mkdir(parents=True, exist_ok=True)
     subprocess.run(
-        ["scip-python", "index", "--output", str(output), str(repo_path)],
+        [
+            "scip-python",
+            "index",
+            "--cwd",
+            str(repo_path),
+            "--output",
+            str(output),
+        ],
         check=True,
     )
