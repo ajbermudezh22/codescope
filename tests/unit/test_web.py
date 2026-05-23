@@ -44,3 +44,31 @@ def test_symbol_endpoint(app):
     body = r.json()
     assert body["qualified_name"] == "tiny.auth.verify_token"
     assert "def verify_token" in body["source"]
+
+
+import json
+from unittest.mock import patch
+
+from codescope.agent.events import FinalAnswerEvent, ToolCallEvent, ToolResultEvent
+
+
+def _fake_run_agent(question, tools, model):
+    yield ToolCallEvent(name="find_symbol", args={"query": "x"}, turn=1)
+    yield ToolResultEvent(name="find_symbol", summary="1 hit", full_result_json="[]", turn=1)
+    yield FinalAnswerEvent(content="Stubbed.", truncated=False)
+
+
+def test_chat_ws_streams_events(app):
+    client = TestClient(app)
+    with patch("codescope.web.chat_ws.run_agent", side_effect=_fake_run_agent):
+        with client.websocket_connect("/api/chat") as ws:
+            ws.send_json({"question": "how?"})
+            messages = []
+            while True:
+                msg = ws.receive_json()
+                messages.append(msg)
+                if msg["type"] == "final_answer":
+                    break
+    types = [m["type"] for m in messages]
+    assert types == ["tool_call", "tool_result", "final_answer"]
+    assert messages[-1]["content"] == "Stubbed."

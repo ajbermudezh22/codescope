@@ -6,6 +6,7 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from codescope.web.chat_ws import build_chat_router
 from codescope.web.status import compute_status
 from codescope.web.symbol import build_symbol_router
 
@@ -26,5 +27,6 @@ def build_app(db_dir: Path) -> FastAPI:
         return asdict(compute_status(db_dir))
 
     app.include_router(build_symbol_router(db_dir))
+    app.include_router(build_chat_router(db_dir))
 
     return app
