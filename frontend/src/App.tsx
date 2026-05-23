@@ -10,6 +10,7 @@ export default function App() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [events, setEvents] = useState<TraceEvent[]>([]);
   const [pending, setPending] = useState(false);
+  const [elapsedMs, setElapsedMs] = useState<number>(0);
   const wsRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
@@ -19,8 +20,10 @@ export default function App() {
   }, []);
 
   function onSubmit(question: string) {
+    const start = Date.now();
     setMessages((m) => [...m, { role: "user", content: question }]);
     setEvents([]);
+    setElapsedMs(0);
     setPending(true);
     const ws = openChat(
       (ev: TraceEvent) => {
@@ -30,6 +33,7 @@ export default function App() {
             ...m,
             { role: "assistant", content: ev.content },
           ]);
+          setElapsedMs(Date.now() - start);
           setPending(false);
           ws.close();
         }
@@ -54,6 +58,10 @@ export default function App() {
         <Chat messages={messages} onSubmit={onSubmit} pending={pending} />
         <Trace events={events} />
       </main>
+      <footer className="px-4 py-1 border-t border-neutral-800 text-xs text-neutral-500 flex justify-end gap-4">
+        <span>tool calls: {events.filter((e) => e.type === "tool_call").length}</span>
+        <span>{elapsedMs > 0 ? `${(elapsedMs / 1000).toFixed(1)}s` : "—"}</span>
+      </footer>
     </div>
   );
 }
