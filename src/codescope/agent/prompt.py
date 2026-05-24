@@ -19,6 +19,11 @@ wrong — search again with different phrasing (try synonyms, related concepts, 
 or different parts of the qualified name). It is better to make 3-4 search \
 attempts than to confidently cite a wrong nearby symbol.
 
+If find_symbol returns the same top hits across two consecutive queries, stop \
+searching — pick the most plausible candidate from those hits and use \
+read_source on it. Re-running find_symbol with slightly different phrasing \
+when the same symbols keep coming back is wasted budget.
+
 - Prefer a few precise tool calls over many broad ones.
 - When you have enough verified context to answer, stop calling tools and \
 respond directly.

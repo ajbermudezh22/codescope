@@ -42,12 +42,17 @@ class Tools:
     def find_symbol(
         self, query: str, kind: str | None = None, k: int = 5
     ) -> list[SymbolHit]:
+        import math
+
         [qvec] = self._embedder.embed([query])
-        fetch = k * 4 if kind else k
+        # Over-fetch so the re-ranker has room to reshuffle.
+        fetch = max(k * 3, 15)
         rows = self._lance.search(qvec).limit(fetch).to_list()
         symbol_ids = [r["symbol_id"] for r in rows]
         if not symbol_ids:
             return []
+
+        # Pull Kuzu metadata for all candidates in one query.
         df = self._kuzu.execute(
             "MATCH (s:Symbol) WHERE s.id IN $ids "
             "RETURN s.id AS id, s.name AS name, s.qualified_name AS qn, "
@@ -55,13 +60,39 @@ class Tools:
             {"ids": symbol_ids},
         ).get_as_df()
         by_id = {row["id"]: row for _, row in df.iterrows()}
-        out: list[SymbolHit] = []
+
+        # Batch caller-count query: in-degree on CALLS for all candidates.
+        callers_df = self._kuzu.execute(
+            "MATCH (caller:Symbol)-[:CALLS]->(s:Symbol) "
+            "WHERE s.id IN $ids "
+            "RETURN s.id AS id, count(caller) AS n",
+            {"ids": symbol_ids},
+        ).get_as_df()
+        callers_by_id: dict[str, int] = {
+            row["id"]: int(row["n"]) for _, row in callers_df.iterrows()
+        }
+
+        # Re-score: vector similarity blended with log1p of caller count.
+        # Weight 0.15 means a symbol with ~e^7 callers (~1096) would be on par
+        # with a perfect vector match. Practically the centrality term breaks
+        # ties between near-equal embeddings; even a single caller (log1p(1)≈0.69)
+        # adds ~0.10 to the score, enough to consistently lift called symbols
+        # over uncalled ones with similar embeddings.
+        scored: list[tuple[float, dict, dict]] = []
         for r in rows:
             meta = by_id.get(r["symbol_id"])
             if meta is None:
                 continue
             if kind and meta["kind"] != kind:
                 continue
+            vector_score = 1.0 - r["_distance"]
+            callers = callers_by_id.get(r["symbol_id"], 0)
+            blended = vector_score + 0.15 * math.log1p(callers)
+            scored.append((blended, r, meta))
+
+        scored.sort(key=lambda t: t[0], reverse=True)
+        out: list[SymbolHit] = []
+        for blended, r, meta in scored[:k]:
             out.append(
                 SymbolHit(
                     symbol_id=r["symbol_id"],
@@ -71,11 +102,9 @@ class Tools:
                     file=meta["file"],
                     signature=meta["sig"] or "",
                     doc_excerpt=(meta["doc"] or "")[:200],
-                    score=1.0 - r["_distance"],
+                    score=blended,
                 )
             )
-            if len(out) >= k:
-                break
         return out
 
     # --- callers / callees ----------------------------------------------

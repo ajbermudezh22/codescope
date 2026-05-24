@@ -61,3 +61,16 @@ def test_read_source_returns_file_slice(indexed_tiny):
     assert "def verify_token" in slice_.source
     assert "Return True if the token is valid" in slice_.source
     assert slice_.qualified_name == "tiny.auth.verify_token"
+
+
+def test_find_symbol_ranks_central_symbols_higher(indexed_tiny):
+    """A query that matches multiple symbols should prefer the one with more callers."""
+    tools = Tools.open(indexed_tiny)
+    # "token" is broad — matches verify_token, issue_token, authorize_request.
+    hits = tools.find_symbol("token", k=5)
+    qns = [h.qualified_name for h in hits]
+    # verify_token has 1 caller, issue_token has 0. With re-rank,
+    # verify_token should rank above issue_token even if they're close on embedding.
+    assert "tiny.auth.verify_token" in qns
+    if "tiny.auth.issue_token" in qns:
+        assert qns.index("tiny.auth.verify_token") < qns.index("tiny.auth.issue_token")
