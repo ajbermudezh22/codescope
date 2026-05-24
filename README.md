@@ -80,14 +80,29 @@ Four tools, hard-capped at 6 turns. The system prompt steers the model toward "s
 
 ## Eval
 
-20-question precision spot-check on `fastapi`. Setup and run instructions are in [`eval/README.md`](eval/README.md).
+20-question precision spot-check on the [fastapi](https://github.com/fastapi/fastapi) codebase (6,461 symbols, 12,655 call edges). See [`eval/score.md`](eval/score.md) for per-question results and [`eval/questions.yaml`](eval/questions.yaml) for the full set.
 
-| | correct | partial | wrong |
+| | ✅ correct | partial | ✗ wrong |
 |---|---|---|---|
-| codescope | TODO / 20 | TODO / 20 | TODO / 20 |
-| baseline two-stage chain | TODO / 20 | TODO / 20 | TODO / 20 |
+| codescope (gpt-4o-mini, MAX_TURNS=6) | 8 / 20 | 1 / 20 | 11 / 20 |
 
-Per-question scoring goes in [`eval/score.md`](eval/score.md).
+40% headline accuracy with the cheapest model and a 6-turn budget. The failure modes are concentrated and tractable:
+
+- **4 questions:** the agent gives up after 3–5 `find_symbol` queries instead of trying varied phrasings.
+- **4 questions:** the agent picks a real-but-wrong-nearby symbol (e.g. `Security` instead of `Depends`). It never verifies with `read_source` before citing.
+- **3 questions:** the agent hits the 6-turn budget mid-investigation and returns truncated.
+
+These are addressable: bumping MAX_TURNS to 10, adding a "verify before citing" instruction to the system prompt, and using a stronger model would plausibly take this to 14–16 / 20 — without any architectural change. Tracked as follow-ups; not in v1.0.
+
+The 8 wins are clean: every one has a coherent trace (the right symbol surfaced in the first or second `find_symbol`) and the answer cites it with signature and context. The architecture works as designed when the question maps cleanly to a single concept; it struggles on disambiguation and multi-hop reasoning at this model + turn budget.
+
+To re-run:
+
+```bash
+source .venv/bin/activate
+OPENAI_API_KEY=sk-... python eval/run_codescope.py   # ~$0.50-$2 on gpt-4o-mini
+python eval/auto_score.py                            # heuristic auto-score
+```
 
 ## Origin and attribution
 
