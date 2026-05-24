@@ -1,56 +1,6 @@
 # codescope
 
-Chat with a Python codebase. SCIP-precise symbol graphs + a bounded agentic retrieval loop. The UI streams every tool call the agent makes, so you can watch it reason.
-
-> Demo GIF coming soon.
-
-## Why this exists
-
-Most "chat with your code" tools dump a vector-searched grab bag of file chunks into a prompt and hope. The result is plausible-sounding answers that hallucinate symbols. codescope takes the opposite bet:
-
-- The graph is **IDE-precise** — built from a [SCIP](https://github.com/sourcegraph/scip) index (`scip-python`), so call edges are real method-dispatch references, not name matches.
-- The retrieval is **a bounded agent**, not a fixed two-stage chain. The model picks among four typed tools per turn (`find_symbol`, `callers_of`, `callees_of`, `read_source`) and converges in ≤ 6 turns. Every decision is visible in the trace pane.
-
-## Install
-
-```bash
-# 1. Python deps (Python ≥3.11 required)
-pip install -e ".[dev]"
-
-# 2. SCIP indexer (Node.js tool, Sourcegraph)
-npm install -g @sourcegraph/scip-python
-
-# 3. A model API key — defaults to OpenAI
-export OPENAI_API_KEY=sk-...
-```
-
-Tested on Python 3.12 and Node 25 on macOS.
-
-## Use
-
-```bash
-# Index any local Python repo. No LLM calls; takes ~30s on fastapi-sized projects.
-codescope index /path/to/your/repo
-
-# Re-index after changes (wipes and rebuilds)
-codescope index /path/to/your/repo --force
-
-# Launch the chat server (defaults to 127.0.0.1:8000)
-codescope chat
-```
-
-Then open the frontend in a second terminal:
-
-```bash
-cd frontend
-npm install
-npm run dev
-# Open the URL printed to stdout.
-```
-
-For a production bundle, `npm run build` writes a static site to `frontend/dist/`.
-
-## Architecture
+**Chat with a Python codebase. SCIP-precise symbol graphs + a bounded agentic retrieval loop, with a live tool-trace UI that lets you watch the model reason.**
 
 ```mermaid
 flowchart LR
@@ -59,7 +9,7 @@ flowchart LR
     B --> C[(Kuzu graph)]
     B --> D[(LanceDB vectors)]
   end
-  subgraph Serve["Serve (FastAPI)"]
+  subgraph Serve["Serve (FastAPI + React)"]
     UI[Web UI] <-->|WebSocket| FAPI[FastAPI]
     FAPI --> AG[Bounded agent loop]
     AG --> T[Tools API]
@@ -68,19 +18,122 @@ flowchart LR
   end
 ```
 
-Three layers, each with one job. The agent never touches the databases directly — it only sees the four-method `Tools` API. The indexer is write-only and independent of everything else.
+> Demo video coming soon. In the meantime, the per-question reasoning traces in [`eval/results-gpt5-v4.jsonl`](eval/results-gpt5-v4.jsonl) show exactly what the agent does on real fastapi questions.
 
-### What's in the graph
+## Why this exists
 
-A single `Symbol` node type and a single `CALLS` relation. SCIP gives us the rest (kind, qualified name, signature, docstring) as node properties. Smaller schema = fewer ways the agent can get lost.
+Most "chat with your code" tools do a single vector search, dump the top-k file chunks into a prompt, and hope. Answers sound plausible but hallucinate symbols. codescope takes the opposite bet:
 
-### What's in the agent loop
+- The graph is **IDE-precise** — built from a [SCIP](https://github.com/sourcegraph/scip) index produced by `scip-python`, so call edges are real method-dispatch references, not name matches.
+- The retrieval is **a bounded agent**, not a fixed pipeline. The model picks among four typed tools per turn (`find_symbol`, `callers_of`, `callees_of`, `read_source`) and converges in ≤ 20 turns. Every decision is visible in the trace pane.
 
-Four tools, hard-capped at 6 turns. The system prompt steers the model toward "start with `find_symbol`, then traverse, then `read_source` only when needed." Provider-agnostic via LiteLLM, defaults to `gpt-4o-mini`.
+## Background and attribution
+
+This project is an open-source continuation of research originally conducted as my Master's thesis at TU Berlin, in collaboration with **Siemens Mobility**. The original thesis system is the proprietary intellectual property of Siemens Mobility and TU Berlin and is not publicly available.
+
+**codescope is an independent, clean-room reimplementation.** It was designed and built from scratch around a fundamentally different architectural approach — replacing the thesis's fixed two-stage retrieval chain with a bounded agentic tool-use loop. It shares **no source code, database schema, naming conventions, or technology stack** with the thesis system. The full architectural delta is documented in the design spec at [`docs/design/specs/2026-05-23-codescope-design.md`](docs/design/specs/2026-05-23-codescope-design.md#3-architectural-distance-from-thesis).
+
+### How the thesis system worked, in brief
+
+The thesis system applied Knowledge-Graph-Augmented Retrieval to source code. Its pipeline:
+
+1. **Polyglot parsing** with tree-sitter (Python, C, C++).
+2. **Graph construction** in Neo4j with five node types (File / Class / Function / Struct / Namespace) and four relations (DEFINES / IMPORTS / INCLUDES / CALLS). Relation precision was mixed — `CALLS` was inferred from static name matching rather than resolved references.
+3. **An LLM enrichment phase** that generated a semantic summary for every file node. The summaries were the embedding source for vector search. This phase was expensive: ~72 hours to enrich TensorFlow-scale repos.
+4. **FAISS** for the vector store.
+5. **A fixed two-stage retrieval pipeline**: vector search over file summaries → APOC `subgraphAll` graph expansion → final LLM synthesis. The model made no decisions during retrieval; the pipeline was the algorithm.
+6. **Streamlit** for the UI.
+
+The thesis's main contribution was demonstrating that the enrichment + graph-expansion combination meaningfully outperformed pure vector-RAG baselines on code understanding tasks.
+
+### How codescope is different
+
+codescope keeps the *problem* (chat with a repo) but rebuilds every architectural layer below it:
+
+| Layer | Thesis system | codescope |
+|---|---|---|
+| Languages supported | Python, C, C++ | Python only |
+| Parser & symbol resolution | tree-sitter + static name matching | `scip-python` (IDE-grade resolved references) |
+| Graph DB | Neo4j (server) | Kuzu (embedded) |
+| Graph schema | 5 node types + 4 relations, mixed precision | 1 node type + 1 relation, all SCIP-precise |
+| What's embedded | LLM-generated file summaries | symbol's own docstring + signature |
+| Index-time LLM cost | hours to days (enrichment phase) | zero (no LLM at index time) |
+| Vector DB | FAISS | LanceDB (embedded) |
+| Retrieval shape | Fixed two-stage pipeline | Bounded agent loop, 4 tools, ≤20 turns |
+| LLM orchestration | LangChain | LiteLLM + ~50 lines of agent code |
+| UI | Streamlit | FastAPI + React, with live trace pane |
+
+The retrieval architecture is the deepest change. The thesis pipeline made every decision upfront; codescope makes them at inference time, one tool call per turn, with the trace visible to the user.
+
+## How codescope works
+
+### Index time
+
+```bash
+codescope index /path/to/your/python/repo
+```
+
+Runs `scip-python` over the repo, parses the protobuf output, writes Symbol nodes + CALLS edges to Kuzu and embeddings of (qualified name + signature + docstring) into LanceDB. No LLM calls during indexing — typically 10-60 seconds depending on repo size.
+
+### Query time
+
+When you ask a question, the agent loop runs:
+
+1. **System prompt** instructs it to prefer `find_symbol` first, then traverse via `callers_of` / `callees_of`, then `read_source` only when needed.
+2. The model picks a tool, the server dispatches it, the result feeds back into the loop.
+3. Trace events stream to the UI over a WebSocket so you watch every decision live.
+4. After at most 20 turns, the model produces a final answer citing symbols by qualified name.
+
+### The four tools
+
+```python
+find_symbol(query, kind=None, k=5)     # semantic search over symbol docs + signatures
+callers_of(symbol_id, depth=1)          # who calls this symbol
+callees_of(symbol_id, depth=1)          # what this symbol calls
+read_source(symbol_id, with_context_lines=0)  # the actual code
+```
+
+Everything else is plumbing. The minimal API is the whole point: fewer choices for the model, more interpretable traces, easier to debug.
+
+## Install
+
+```bash
+# 1. Python deps (Python ≥3.11)
+pip install -e ".[dev]"
+
+# 2. SCIP indexer (Node.js tool from Sourcegraph)
+npm install -g @sourcegraph/scip-python
+
+# 3. Model API key — defaults to OpenAI
+export OPENAI_API_KEY=sk-...
+```
+
+Tested on Python 3.12 and Node 25 on macOS.
+
+## Use
+
+```bash
+# Index a Python repo. No LLM calls; ~30s on fastapi-sized projects.
+codescope index /path/to/your/repo
+
+# Launch the chat server.
+codescope chat
+```
+
+Then run the dev frontend in a second terminal:
+
+```bash
+cd frontend
+npm install
+npm run dev
+# Open the printed URL.
+```
+
+For a production build, `npm run build` produces a static bundle under `frontend/dist/`.
 
 ## Eval
 
-20-question precision spot-check on the [fastapi](https://github.com/fastapi/fastapi) codebase (6,461 symbols, 12,655 call edges). Hand-written questions verified against the indexed graph. See [`eval/score.md`](eval/score.md) for full per-question breakdown.
+20-question precision spot-check on the [fastapi](https://github.com/fastapi/fastapi) codebase (6,461 symbols, 12,655 call edges). Hand-written questions, every `expected_symbol` verified to exist in the indexed graph. See [`eval/score.md`](eval/score.md) for the full per-question breakdown.
 
 | run | model | MAX_TURNS | extras | ✅ | partial | ✗ |
 |-----|-------|-----------|--------|----|---------|----|
@@ -89,13 +142,23 @@ Four tools, hard-capped at 6 turns. The system prompt steers the model toward "s
 | v3 | gpt-5-nano  | 20 | + verify-before-cite                                  | 10 | 0 | 10 |
 | **v4** | **gpt-5** | **20** | **+ verify + anti-loop + re-rank-by-callers** | **13** | **1** | **6** |
 
-**v4: 65% correct on the headline metric, +62% relative improvement over v1**, with zero confidently-wrong answers across the iterations. Every failure across v2/v3/v4 is an honest "still investigating, ran out of turns" — not "wrong answer with confidence." That's the failure profile a real developer tool should have.
+**v4: 65% correct, +62% relative improvement over v1**, with zero confidently-wrong answers across all four runs. Every miss in v2/v3/v4 is an honest "still investigating, ran out of turns" — not "wrong answer with confidence." That's the failure profile a real developer tool should have.
 
-Three of v4's wins (q01, q02, q10) only landed after the caller-count re-rank shipped — these are central, high-fan-in symbols (`get_openapi`, `APIRoute`, `get_route_handler`) where pure semantic similarity wasn't enough to surface them. The re-rank does real work.
+### What each iteration changed (and why)
 
-The remaining 6 failures are all hard multi-hop questions where the agent was making genuine progress when the 20-turn budget hit. A stronger model + bigger budget would recover most of them at higher cost. v4 is a deliberate sweet spot.
+The four-run progression isn't arbitrary — each step targeted a specific failure pattern from the previous run.
 
-To re-run:
+- **v1 baseline (8/20).** Default gpt-4o-mini, MAX_TURNS=6, generic prompt. Found 4 confidently-wrong answers (e.g. citing `Security` when the question was about `Depends`). Also gave up too quickly on 4 questions.
+
+- **v2: instruction tuning (8/20).** Added a "before citing a symbol, use `read_source` to verify it actually does what was asked" rule to the system prompt. Switched to `gpt-5-nano` for better instruction-following. The number didn't move, but the *failure mode* shifted entirely: zero confidently-wrong, all 12 misses were honest turn-budget truncations. The agent was now over-verifying — too cautious for the 10-turn budget.
+
+- **v3: budget tuning (10/20).** Same prompt and model, bumped MAX_TURNS to 20. The more careful agent had room to complete its verification chain on two more questions (`include_router`, `HTTPBearer`).
+
+- **v4: retrieval tuning + stronger model (13/20).** Three changes: (a) added an anti-search-loop rule to the prompt ("if find_symbol returns the same hits twice, stop searching and verify the best candidate"), (b) re-ranked `find_symbol` results by blending vector similarity with `log1p(caller_count) * 0.15` — central symbols with many callers now surface above near-semantic-matches that are unused, (c) upgraded to `gpt-5`. Three new wins (q01 `get_openapi`, q02 `APIRoute`, q10 `get_route_handler`) — all central, high-fan-in symbols that the caller-count re-rank was specifically designed to surface.
+
+The 6 v4 failures are all hard multi-hop questions where the agent was making genuine progress when the 20-turn budget hit. A stronger model + bigger budget would recover most of them at higher cost. v4 is a deliberate sweet spot.
+
+### Re-running the eval
 
 ```bash
 source .venv/bin/activate
@@ -103,27 +166,42 @@ OPENAI_API_KEY=sk-... python eval/run_codescope.py --model gpt-5 --out eval/resu
 python eval/auto_score.py
 ```
 
-## Origin and attribution
-
-Built on lessons from my Master's thesis at TU Berlin (in collaboration with Siemens). codescope is an independent reimplementation around an agentic retrieval architecture — it shares no code, schema, or naming conventions with the thesis system. The full architectural delta is in [the spec](docs/design/specs/2026-05-23-codescope-design.md#3-architectural-distance-from-thesis).
-
-In one line: the thesis was a fixed two-stage chain (vector search → APOC graph expansion → synthesis) over a tree-sitter graph with LLM-enriched file summaries. codescope is a bounded agent loop over an SCIP graph, no enrichment phase, four typed tools, live tool trace.
-
 ## Tech stack
 
 | Layer | Choice | Why |
 |---|---|---|
 | Indexer | `scip-python` | IDE-grade symbol resolution; no name-matching heuristics |
-| Graph DB | Kuzu (embedded) | No server, fast, openCypher subset |
+| Graph DB | Kuzu (embedded) | No server, openCypher subset, fast |
 | Vector DB | LanceDB (embedded) | No server, columnar, simple Python API |
 | Embeddings | `bge-small-en-v1.5` via FastEmbed | Local, CPU, 384-dim |
-| LLM client | LiteLLM | Provider-agnostic; works with OpenAI, Gemini, Ollama |
+| LLM client | LiteLLM | Provider-agnostic — OpenAI, Anthropic, Gemini, Ollama |
 | Backend | FastAPI + WebSockets | Streaming-first |
-| Frontend | Vite + React + TS + Tailwind | Small bundle, fast iteration |
+| Frontend | Vite + React + TypeScript + Tailwind | Small bundle, fast iteration |
+
+## Project layout
+
+```
+src/codescope/
+  indexer/      one-shot: scip-python → Kuzu + LanceDB
+  store/        4-method Tools API over the indexed graph
+  agent/        bounded LiteLLM tool-use loop
+  web/          FastAPI server + WebSocket trace streaming
+frontend/
+  src/          React UI with chat pane + live trace pane
+eval/
+  questions.yaml         20 hand-written fastapi questions
+  run_codescope.py       runs the eval
+  auto_score.py          heuristic scorer (manually reviewed)
+  results-*.jsonl        evidence for each scored row
+  score.md               full per-question + per-run analysis
+docs/
+  design/specs/          design spec
+  design/plans/          implementation plan
+```
 
 ## Status
 
-v1.0 — local-only, single Python repo, no incremental re-index, no hosted demo. See [the spec](docs/design/specs/2026-05-23-codescope-design.md#2-goals--non-goals) for the explicit non-goals.
+v1.0 — local-only, single Python repo at a time, no incremental re-index, no hosted demo. Out of scope for v1.0 per the [design spec §2](docs/design/specs/2026-05-23-codescope-design.md#2-goals--non-goals): multi-language, hosted multi-user demo, persistent chat history, graph visualization, test↔code linkage. Candidates for v1.1.
 
 ## License
 
