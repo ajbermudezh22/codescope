@@ -1,7 +1,7 @@
 import kuzu
 
 from codescope.indexer.kuzu_writer import KuzuWriter
-from codescope.indexer.scip_parser import SymbolRecord, CallRecord
+from codescope.indexer.scip_parser import CallRecord, SymbolRecord
 
 
 def _sample_symbols() -> list[SymbolRecord]:

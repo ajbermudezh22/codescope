@@ -1,4 +1,5 @@
 """codescope CLI: index, chat."""
+# ruff: noqa: B008  # Typer's API requires function calls (typer.Argument/Option) in default arguments
 
 from __future__ import annotations
 

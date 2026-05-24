@@ -25,7 +25,7 @@ class Tools:
         self._repo_root = repo_root
 
     @classmethod
-    def open(cls, db_dir: Path) -> "Tools":
+    def open(cls, db_dir: Path) -> Tools:
         db_dir = Path(db_dir)
         kdb = kuzu.Database(str(db_dir / "graph.kuzu"))
         kconn = kuzu.Connection(kdb)

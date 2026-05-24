@@ -1,6 +1,6 @@
 from unittest.mock import MagicMock
 
-from codescope.agent.events import FinalAnswerEvent, ToolCallEvent, event_to_dict
+from codescope.agent.events import ToolCallEvent, event_to_dict
 from codescope.store.types import SymbolHit
 
 

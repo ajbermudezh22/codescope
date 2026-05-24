@@ -35,7 +35,7 @@ class LanceWriter:
         vectors = self._embedder.embed(texts)
         records = [
             {"symbol_id": s.id, "text": t, "vector": v}
-            for s, t, v in zip(documented, texts, vectors)
+            for s, t, v in zip(documented, texts, vectors, strict=False)
         ]
         # Let LanceDB infer the schema from the first batch — avoids pyarrow
         # fixed-size-list incantation differences across versions.

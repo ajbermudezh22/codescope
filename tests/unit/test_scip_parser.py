@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from codescope.indexer.scip_parser import parse_index, SymbolRecord, CallRecord, _is_test_path
+from codescope.indexer.scip_parser import _is_test_path, parse_index
 from codescope.indexer.scip_runner import run_scip
 
 TINY_REPO = Path(__file__).parent.parent / "fixtures" / "tiny_repo"

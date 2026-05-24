@@ -3,3 +3,7 @@ target-version = "py311"
 
 [lint]
 select = ["E", "F", "W", "I", "B", "UP", "SIM"]
+
+[lint.per-file-ignores]
+# Generated protobuf file — long serialised binary blob cannot be wrapped
+"src/codescope/indexer/scip_pb2.py" = ["E501"]

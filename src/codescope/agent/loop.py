@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Iterator
 from dataclasses import asdict
-from typing import Any, Iterator, Protocol
+from typing import Any, Protocol
 
 import litellm
 

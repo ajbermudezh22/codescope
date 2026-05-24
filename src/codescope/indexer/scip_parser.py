@@ -46,9 +46,9 @@ def _is_test_path(file_path: str) -> bool:
     if "/tests/" in norm or "/test/" in norm:
         return True
     basename = norm.rsplit("/", 1)[-1]
-    if basename.startswith("test_") or basename.endswith("_test.py") or basename == "conftest.py":
-        return True
-    return False
+    return bool(
+        basename.startswith("test_") or basename.endswith("_test.py") or basename == "conftest.py"
+    )
 
 
 @dataclass(frozen=True)
