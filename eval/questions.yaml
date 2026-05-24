@@ -1,92 +1,114 @@
-# 20-question precision spot-check on fastapi.
+# 20-question eval for codescope vs. typical "chat with code" tools, run against fastapi.
+# Mix: ~8 easy (single-symbol), ~8 medium (1-2 graph hops), ~4 hard (multi-step reasoning).
 #
-# Each entry needs:
+# Each entry:
 #   id              — short identifier
-#   q               — natural-language question
-#   expected_symbol — the qualified name that should appear in a correct answer
-#
-# Replace each `TODO: ...` with a real question + symbol you've verified exists
-# in the indexed fastapi. Recommended mix:
-#   - 8 "easy": single-symbol questions answerable via find_symbol alone
-#   - 8 "medium": need at least one callers_of/callees_of hop
-#   - 4 "hard": need read_source or multi-hop traversal
+#   q               — natural-language question a real developer would ask
+#   expected_symbol — qualified name verified to exist in the indexed fastapi graph
+#   difficulty      — easy | medium | hard (informational; runner ignores it)
+
+# --- EASY: questions answerable from a single find_symbol + read_source ---
 
 - id: q01
-  q: "Which function generates the OpenAPI schema?"
+  q: "Which function builds the full OpenAPI schema dict for a FastAPI application?"
   expected_symbol: "fastapi.openapi.utils.get_openapi"
+  difficulty: easy
 
 - id: q02
-  q: "How are dependencies resolved during a request?"
-  expected_symbol: "fastapi.dependencies.utils.solve_dependencies"
+  q: "What class represents an individual API route in FastAPI's routing layer?"
+  expected_symbol: "fastapi.routing.APIRoute"
+  difficulty: easy
 
 - id: q03
-  q: "Where is OAuth2 / token authentication defined?"
-  expected_symbol: "fastapi.security.oauth2"
+  q: "Which class would I instantiate to require a Bearer token in an Authorization header for OAuth2 password flow?"
+  expected_symbol: "fastapi.security.oauth2.OAuth2PasswordBearer"
+  difficulty: easy
 
 - id: q04
-  q: "TODO: a 'find the routing logic' style question"
-  expected_symbol: "fastapi.routing.APIRoute"
+  q: "Where is the HTTPException class defined in fastapi?"
+  expected_symbol: "fastapi.exceptions.HTTPException"
+  difficulty: easy
 
 - id: q05
-  q: "TODO: a 'find the exception handler' style question"
-  expected_symbol: "fastapi.exception_handlers"
+  q: "Which function is the entry point for serializing arbitrary Python objects (dataclasses, Pydantic models, etc.) to JSON-compatible types in FastAPI?"
+  expected_symbol: "fastapi.encoders.jsonable_encoder"
+  difficulty: easy
 
 - id: q06
-  q: "TODO"
-  expected_symbol: "TODO"
+  q: "What class do I use to accept file uploads in a FastAPI endpoint?"
+  expected_symbol: "fastapi.datastructures.UploadFile"
+  difficulty: easy
 
 - id: q07
-  q: "TODO"
-  expected_symbol: "TODO"
+  q: "Which function do I call to declare a dependency injection in a route signature?"
+  expected_symbol: "fastapi.param_functions.Depends"
+  difficulty: easy
 
 - id: q08
-  q: "TODO"
-  expected_symbol: "TODO"
+  q: "What class manages background tasks that run after a response is sent?"
+  expected_symbol: "fastapi.background.BackgroundTasks"
+  difficulty: easy
+
+# --- MEDIUM: requires at least one callers_of / callees_of hop ---
 
 - id: q09
-  q: "TODO"
-  expected_symbol: "TODO"
+  q: "Which function converts a route handler coroutine into a Starlette-compatible ASGI callable?"
+  expected_symbol: "fastapi.routing.request_response"
+  difficulty: medium
 
 - id: q10
-  q: "TODO"
-  expected_symbol: "TODO"
+  q: "What method on APIRoute returns the actual ASGI handler that Starlette calls when a request matches that route?"
+  expected_symbol: "fastapi.routing.APIRoute#get_route_handler"
+  difficulty: medium
 
 - id: q11
-  q: "TODO"
-  expected_symbol: "TODO"
+  q: "Which function inspects a callable's type-annotated parameters and builds the Dependant object that describes all its dependencies?"
+  expected_symbol: "fastapi.dependencies.utils.get_dependant"
+  difficulty: medium
 
 - id: q12
-  q: "TODO"
-  expected_symbol: "TODO"
+  q: "How does FastAPI handle HTTP 422 validation errors by default — which handler function is registered?"
+  expected_symbol: "fastapi.exception_handlers.request_validation_exception_handler"
+  difficulty: medium
 
 - id: q13
-  q: "TODO"
-  expected_symbol: "TODO"
+  q: "Which method on the FastAPI application class merges a sub-router's routes and event handlers into the main app?"
+  expected_symbol: "fastapi.applications.FastAPI#include_router"
+  difficulty: medium
 
 - id: q14
-  q: "TODO"
-  expected_symbol: "TODO"
+  q: "Which function renders the Swagger UI HTML page served at the /docs endpoint?"
+  expected_symbol: "fastapi.openapi.docs.get_swagger_ui_html"
+  difficulty: medium
 
 - id: q15
-  q: "TODO"
-  expected_symbol: "TODO"
+  q: "What class provides a security dependency that extracts a Bearer token from the HTTP Authorization header (non-OAuth2 flow)?"
+  expected_symbol: "fastapi.security.http.HTTPBearer"
+  difficulty: medium
 
 - id: q16
-  q: "TODO"
-  expected_symbol: "TODO"
+  q: "Which function walks all registered routes and collects the Pydantic field metadata needed to generate OpenAPI schemas?"
+  expected_symbol: "fastapi.openapi.utils.get_fields_from_routes"
+  difficulty: medium
+
+# --- HARD: requires reading source + traversing 2+ hops ---
 
 - id: q17
-  q: "TODO"
-  expected_symbol: "TODO"
+  q: "When FastAPI resolves a dependency tree at request time, which function performs the actual recursive resolution — handling sub-dependencies, caching, and collecting background tasks?"
+  expected_symbol: "fastapi.dependencies.utils.solve_dependencies"
+  difficulty: hard
 
 - id: q18
-  q: "TODO"
-  expected_symbol: "TODO"
+  q: "Sync route handlers in FastAPI are not run directly in the event loop. Which function wraps a synchronous callable so it can be awaited safely in an async context by running it in a thread pool?"
+  expected_symbol: "fastapi.concurrency.contextmanager_in_threadpool"
+  difficulty: hard
 
 - id: q19
-  q: "TODO"
-  expected_symbol: "TODO"
+  q: "To support multiple lifespan context managers from an included router and the parent app, FastAPI needs to merge them. Which function composes two async context managers into a single combined lifespan?"
+  expected_symbol: "fastapi.routing._merge_lifespan_context"
+  difficulty: hard
 
 - id: q20
-  q: "TODO"
-  expected_symbol: "TODO"
+  q: "When a dependency is declared with scopes (e.g. for OAuth2), FastAPI needs to flatten the entire dependency graph to collect all required scopes. Which function flattens a nested Dependant tree into a single list of all transitive dependencies?"
+  expected_symbol: "fastapi.dependencies.utils.get_flat_dependant"
+  difficulty: hard
