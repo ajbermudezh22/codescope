@@ -80,22 +80,25 @@ Four tools, hard-capped at 6 turns. The system prompt steers the model toward "s
 
 ## Eval
 
-20-question precision spot-check on the [fastapi](https://github.com/fastapi/fastapi) codebase (6,461 symbols, 12,655 call edges). Hand-written questions verified against the indexed graph. See [`eval/score.md`](eval/score.md) for the full per-question breakdown and [`eval/questions.yaml`](eval/questions.yaml) for the question set.
+20-question precision spot-check on the [fastapi](https://github.com/fastapi/fastapi) codebase (6,461 symbols, 12,655 call edges). Hand-written questions verified against the indexed graph. See [`eval/score.md`](eval/score.md) for the full per-question breakdown and three-run analysis.
 
 | run | model | MAX_TURNS | prompt | ✅ | partial | ✗ |
 |-----|-------|-----------|--------|----|---------|----|
-| v1 | gpt-4o-mini | 6 | original | 8 | 1 | 11 |
-| v2 | gpt-5-nano | 10 | + verify-before-cite | 8 | 0 | 12 |
+| v1 | gpt-4o-mini | 6  | original             | 8  | 1 | 11 |
+| v2 | gpt-5-nano  | 10 | + verify-before-cite | 8  | 0 | 12 |
+| v3 | gpt-5-nano  | 20 | + verify-before-cite | **10** | 0 | 10 |
 
-The headline didn't move between v1 and v2, but the failure mode shifted entirely. v1 produced 4 confidently-wrong nearby symbols (e.g. citing `Security` when the question was about `Depends`); v2 produced zero. The verify-before-cite rule plus gpt-5-nano's better instruction-following made the agent refuse to commit to a symbol it hadn't actually inspected. Every v2 failure (12 of 12) is a turn-budget truncation — the agent was mid-investigation, not wrong. For a real developer tool, "still investigating" is a much better failure mode than "confidently wrong."
+Three runs over the same questions, with one variable changing each time. v3 is the current best at 10/20 — but the more interesting result is the failure-mode shift. v1 produced four *confidently wrong* answers (e.g. citing `Security` when the question was about `Depends`); v3 produced zero. Every remaining failure in v3 is an honest "still investigating, ran out of turns" — the better failure mode for a real developer tool.
 
-The fix is mechanical: the careful agent needs a bigger budget. v3 will run with `MAX_TURNS=20` (one-line change) and should recover most of the truncations.
+All 8 wins from v1 held across all three runs. v3 added two new wins (q13 `include_router`, q15 `HTTPBearer`) where the bigger turn budget let the verification chain complete.
+
+Two distinct patterns explain v3's 10 remaining failures: 5 "search-loops" (agent refines find_symbol queries without ever verifying a candidate) and 5 "exploration-loops" (multi-hop questions that need more depth than 20 turns). Both are addressable with prompt sharpening and/or more compute — tracked as v4 candidates in `eval/score.md`.
 
 To re-run:
 
 ```bash
 source .venv/bin/activate
-OPENAI_API_KEY=sk-... python eval/run_codescope.py --model gpt-5-nano --out eval/results-gpt5-nano-v3.jsonl
+OPENAI_API_KEY=sk-... python eval/run_codescope.py --model gpt-5-nano --out eval/results-<version>.jsonl
 python eval/auto_score.py
 ```
 
