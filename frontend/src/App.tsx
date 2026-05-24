@@ -54,9 +54,13 @@ export default function App() {
             : "● not indexed"}
         </span>
       </header>
-      <main className="flex-1 grid grid-cols-[55%_45%] gap-4 p-4 overflow-hidden">
-        <Chat messages={messages} onSubmit={onSubmit} pending={pending} />
-        <Trace events={events} />
+      <main className="flex-1 min-h-0 grid grid-cols-[55%_45%] gap-4 p-4 overflow-hidden">
+        <div className="min-h-0 min-w-0 overflow-hidden">
+          <Chat messages={messages} onSubmit={onSubmit} pending={pending} />
+        </div>
+        <div className="min-h-0 min-w-0 overflow-hidden">
+          <Trace events={events} />
+        </div>
       </main>
       <footer className="px-4 py-1 border-t border-neutral-800 text-xs text-neutral-500 flex justify-end gap-4">
         <span>tool calls: {events.filter((e) => e.type === "tool_call").length}</span>

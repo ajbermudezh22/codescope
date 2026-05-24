@@ -41,12 +41,12 @@ export function Trace({ events }: { events: TraceEvent[] }) {
         c.kind === "tool_call" ? (
           <div
             key={i}
-            className="bg-neutral-900 border border-neutral-800 rounded p-2 cursor-pointer"
+            className="bg-neutral-900 border border-neutral-800 rounded p-2 cursor-pointer break-all"
             onClick={() => setExpanded(expanded === i ? null : i)}
           >
             <div>
               <span className="text-emerald-400">▸ {c.name}</span>
-              <span className="text-neutral-500">
+              <span className="text-neutral-500 break-all">
                 {" "}
                 (
                 {Object.entries(c.args)
