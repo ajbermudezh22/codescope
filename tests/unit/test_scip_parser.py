@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from codescope.indexer.scip_parser import parse_index, SymbolRecord, CallRecord
+from codescope.indexer.scip_parser import parse_index, SymbolRecord, CallRecord, _is_test_path
 from codescope.indexer.scip_runner import run_scip
 
 TINY_REPO = Path(__file__).parent.parent / "fixtures" / "tiny_repo"
@@ -38,3 +38,17 @@ def test_parse_index_emits_call_from_authorize_to_verify(tiny_index):
     _, calls = parse_index(tiny_index)
     edges = {(c.caller_qualified_name, c.callee_qualified_name) for c in calls}
     assert ("tiny.api.authorize_request", "tiny.auth.verify_token") in edges
+
+
+def test_is_test_path_detects_common_patterns():
+    assert _is_test_path("tests/foo.py")
+    assert _is_test_path("src/pkg/tests/bar.py")
+    assert _is_test_path("test/foo.py")
+    assert _is_test_path("pkg/test_module.py")
+    assert _is_test_path("pkg/module_test.py")
+    assert _is_test_path("conftest.py")
+    assert _is_test_path("./tests/foo.py")
+    # Negative cases
+    assert not _is_test_path("src/pkg/main.py")
+    assert not _is_test_path("app/services/chat.py")
+    assert not _is_test_path("")

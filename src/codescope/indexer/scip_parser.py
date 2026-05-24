@@ -26,6 +26,30 @@ from pathlib import Path
 
 from codescope.indexer import scip_pb2
 
+_TEST_PATH_PATTERNS = (
+    "tests/",
+    "test/",
+    "/tests/",
+    "/test/",
+    "_test.py",
+    "test_",
+    "conftest.py",
+)
+
+
+def _is_test_path(file_path: str) -> bool:
+    if not file_path:
+        return False
+    norm = file_path.lstrip("./")
+    if norm.startswith("tests/") or norm.startswith("test/"):
+        return True
+    if "/tests/" in norm or "/test/" in norm:
+        return True
+    basename = norm.rsplit("/", 1)[-1]
+    if basename.startswith("test_") or basename.endswith("_test.py") or basename == "conftest.py":
+        return True
+    return False
+
 
 @dataclass(frozen=True)
 class SymbolRecord:
@@ -191,6 +215,11 @@ def parse_index(scip_path: Path) -> tuple[list[SymbolRecord], list[CallRecord]]:
                     line=ref_line,
                 )
             )
+
+    # Filter test-file symbols + any edges that reference them.
+    kept_ids: set[str] = {s.id for s in symbols if not _is_test_path(s.file)}
+    symbols = [s for s in symbols if s.id in kept_ids]
+    calls = [c for c in calls if c.caller_id in kept_ids and c.callee_id in kept_ids]
 
     return symbols, calls
 
