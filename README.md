@@ -80,28 +80,23 @@ Four tools, hard-capped at 6 turns. The system prompt steers the model toward "s
 
 ## Eval
 
-20-question precision spot-check on the [fastapi](https://github.com/fastapi/fastapi) codebase (6,461 symbols, 12,655 call edges). See [`eval/score.md`](eval/score.md) for per-question results and [`eval/questions.yaml`](eval/questions.yaml) for the full set.
+20-question precision spot-check on the [fastapi](https://github.com/fastapi/fastapi) codebase (6,461 symbols, 12,655 call edges). Hand-written questions verified against the indexed graph. See [`eval/score.md`](eval/score.md) for the full per-question breakdown and [`eval/questions.yaml`](eval/questions.yaml) for the question set.
 
-| | ✅ correct | partial | ✗ wrong |
-|---|---|---|---|
-| codescope (gpt-4o-mini, MAX_TURNS=6) | 8 / 20 | 1 / 20 | 11 / 20 |
+| run | model | MAX_TURNS | prompt | ✅ | partial | ✗ |
+|-----|-------|-----------|--------|----|---------|----|
+| v1 | gpt-4o-mini | 6 | original | 8 | 1 | 11 |
+| v2 | gpt-5-nano | 10 | + verify-before-cite | 8 | 0 | 12 |
 
-40% headline accuracy with the cheapest model and a 6-turn budget. The failure modes are concentrated and tractable:
+The headline didn't move between v1 and v2, but the failure mode shifted entirely. v1 produced 4 confidently-wrong nearby symbols (e.g. citing `Security` when the question was about `Depends`); v2 produced zero. The verify-before-cite rule plus gpt-5-nano's better instruction-following made the agent refuse to commit to a symbol it hadn't actually inspected. Every v2 failure (12 of 12) is a turn-budget truncation — the agent was mid-investigation, not wrong. For a real developer tool, "still investigating" is a much better failure mode than "confidently wrong."
 
-- **4 questions:** the agent gives up after 3–5 `find_symbol` queries instead of trying varied phrasings.
-- **4 questions:** the agent picks a real-but-wrong-nearby symbol (e.g. `Security` instead of `Depends`). It never verifies with `read_source` before citing.
-- **3 questions:** the agent hits the 6-turn budget mid-investigation and returns truncated.
-
-These are addressable: bumping MAX_TURNS to 10, adding a "verify before citing" instruction to the system prompt, and using a stronger model would plausibly take this to 14–16 / 20 — without any architectural change. Tracked as follow-ups; not in v1.0.
-
-The 8 wins are clean: every one has a coherent trace (the right symbol surfaced in the first or second `find_symbol`) and the answer cites it with signature and context. The architecture works as designed when the question maps cleanly to a single concept; it struggles on disambiguation and multi-hop reasoning at this model + turn budget.
+The fix is mechanical: the careful agent needs a bigger budget. v3 will run with `MAX_TURNS=20` (one-line change) and should recover most of the truncations.
 
 To re-run:
 
 ```bash
 source .venv/bin/activate
-OPENAI_API_KEY=sk-... python eval/run_codescope.py   # ~$0.50-$2 on gpt-4o-mini
-python eval/auto_score.py                            # heuristic auto-score
+OPENAI_API_KEY=sk-... python eval/run_codescope.py --model gpt-5-nano --out eval/results-gpt5-nano-v3.jsonl
+python eval/auto_score.py
 ```
 
 ## Origin and attribution

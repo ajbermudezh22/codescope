@@ -1,0 +1,41 @@
+run,id,auto_grade,tool_calls,note
+codescope,q01,x,5,expected symbol not in answer
+codescope,q02,x,3,expected symbol not in answer
+codescope,q03,ok,1,expected qualified name verbatim
+codescope,q04,ok,1,expected qualified name verbatim
+codescope,q05,ok,1,expected qualified name verbatim
+codescope,q06,ok,1,expected qualified name verbatim
+codescope,q07,partial,1,only last segment 'Depends' appears
+codescope,q08,ok,1,expected qualified name verbatim
+codescope,q09,ok,1,expected qualified name verbatim
+codescope,q10,x,2,expected symbol not in answer
+codescope,q11,x,1,expected symbol not in answer
+codescope,q12,x,6,truncated or empty
+codescope,q13,x,3,expected symbol not in answer
+codescope,q14,ok,2,expected qualified name verbatim
+codescope,q15,ok,1,expected qualified name verbatim
+codescope,q16,x,1,expected symbol not in answer
+codescope,q17,x,6,truncated or empty
+codescope,q18,x,5,expected symbol not in answer
+codescope,q19,x,5,expected symbol not in answer
+codescope,q20,x,6,truncated or empty
+gpt5-nano,q01,x,10,truncated or empty
+gpt5-nano,q02,x,10,truncated or empty
+gpt5-nano,q03,ok,6,expected qualified name verbatim
+gpt5-nano,q04,ok,2,expected qualified name verbatim
+gpt5-nano,q05,ok,7,expected qualified name verbatim
+gpt5-nano,q06,ok,7,expected qualified name verbatim
+gpt5-nano,q07,ok,3,expected qualified name verbatim
+gpt5-nano,q08,ok,2,expected qualified name verbatim
+gpt5-nano,q09,ok,8,expected qualified name verbatim
+gpt5-nano,q10,x,10,truncated or empty
+gpt5-nano,q11,x,10,truncated or empty
+gpt5-nano,q12,x,10,truncated or empty
+gpt5-nano,q13,x,10,truncated or empty
+gpt5-nano,q14,ok,3,expected qualified name verbatim
+gpt5-nano,q15,x,10,truncated or empty
+gpt5-nano,q16,x,10,truncated or empty
+gpt5-nano,q17,x,10,truncated or empty
+gpt5-nano,q18,x,10,truncated or empty
+gpt5-nano,q19,x,10,truncated or empty
+gpt5-nano,q20,x,10,truncated or empty
