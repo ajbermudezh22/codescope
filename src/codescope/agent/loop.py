@@ -17,7 +17,7 @@ from codescope.agent.events import (
 from codescope.agent.prompt import SYSTEM_PROMPT
 from codescope.agent.tool_schema import TOOL_SCHEMA
 
-MAX_TURNS = 6
+MAX_TURNS = 10
 
 
 class ToolsProtocol(Protocol):
