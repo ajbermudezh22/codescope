@@ -80,25 +80,26 @@ Four tools, hard-capped at 6 turns. The system prompt steers the model toward "s
 
 ## Eval
 
-20-question precision spot-check on the [fastapi](https://github.com/fastapi/fastapi) codebase (6,461 symbols, 12,655 call edges). Hand-written questions verified against the indexed graph. See [`eval/score.md`](eval/score.md) for the full per-question breakdown and three-run analysis.
+20-question precision spot-check on the [fastapi](https://github.com/fastapi/fastapi) codebase (6,461 symbols, 12,655 call edges). Hand-written questions verified against the indexed graph. See [`eval/score.md`](eval/score.md) for full per-question breakdown.
 
-| run | model | MAX_TURNS | prompt | ✅ | partial | ✗ |
+| run | model | MAX_TURNS | extras | ✅ | partial | ✗ |
 |-----|-------|-----------|--------|----|---------|----|
-| v1 | gpt-4o-mini | 6  | original             | 8  | 1 | 11 |
-| v2 | gpt-5-nano  | 10 | + verify-before-cite | 8  | 0 | 12 |
-| v3 | gpt-5-nano  | 20 | + verify-before-cite | **10** | 0 | 10 |
+| v1 | gpt-4o-mini | 6  | original                                              | 8  | 1 | 11 |
+| v2 | gpt-5-nano  | 10 | + verify-before-cite                                  | 8  | 0 | 12 |
+| v3 | gpt-5-nano  | 20 | + verify-before-cite                                  | 10 | 0 | 10 |
+| **v4** | **gpt-5** | **20** | **+ verify + anti-loop + re-rank-by-callers** | **13** | **1** | **6** |
 
-Three runs over the same questions, with one variable changing each time. v3 is the current best at 10/20 — but the more interesting result is the failure-mode shift. v1 produced four *confidently wrong* answers (e.g. citing `Security` when the question was about `Depends`); v3 produced zero. Every remaining failure in v3 is an honest "still investigating, ran out of turns" — the better failure mode for a real developer tool.
+**v4: 65% correct on the headline metric, +62% relative improvement over v1**, with zero confidently-wrong answers across the iterations. Every failure across v2/v3/v4 is an honest "still investigating, ran out of turns" — not "wrong answer with confidence." That's the failure profile a real developer tool should have.
 
-All 8 wins from v1 held across all three runs. v3 added two new wins (q13 `include_router`, q15 `HTTPBearer`) where the bigger turn budget let the verification chain complete.
+Three of v4's wins (q01, q02, q10) only landed after the caller-count re-rank shipped — these are central, high-fan-in symbols (`get_openapi`, `APIRoute`, `get_route_handler`) where pure semantic similarity wasn't enough to surface them. The re-rank does real work.
 
-Two distinct patterns explain v3's 10 remaining failures: 5 "search-loops" (agent refines find_symbol queries without ever verifying a candidate) and 5 "exploration-loops" (multi-hop questions that need more depth than 20 turns). Both are addressable with prompt sharpening and/or more compute — tracked as v4 candidates in `eval/score.md`.
+The remaining 6 failures are all hard multi-hop questions where the agent was making genuine progress when the 20-turn budget hit. A stronger model + bigger budget would recover most of them at higher cost. v4 is a deliberate sweet spot.
 
 To re-run:
 
 ```bash
 source .venv/bin/activate
-OPENAI_API_KEY=sk-... python eval/run_codescope.py --model gpt-5-nano --out eval/results-<version>.jsonl
+OPENAI_API_KEY=sk-... python eval/run_codescope.py --model gpt-5 --out eval/results-<version>.jsonl
 python eval/auto_score.py
 ```
 

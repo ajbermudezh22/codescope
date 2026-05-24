@@ -1,79 +1,68 @@
 # Eval results: codescope on fastapi
 
 **Benchmark:** fastapi codebase indexed with codescope (6,461 symbols, 12,655 CALLS edges)
-**Questions:** 20 hand-written, all `expected_symbol`s verified to exist in the indexed graph. See [`eval/questions.yaml`](questions.yaml).
+**Questions:** 20 hand-written, all `expected_symbol`s verified against the indexed graph. See [`questions.yaml`](questions.yaml).
 
-## Three runs
+## Four runs
 
-| run | model | MAX_TURNS | prompt | ✅ | partial | ✗ |
+| run | model | MAX_TURNS | extras | ✅ | partial | ✗ |
 |-----|-------|-----------|--------|----|---------|----|
-| v1 | gpt-4o-mini | 6  | original             | 8 | 1 | 11 |
-| v2 | gpt-5-nano  | 10 | + verify-before-cite | 8 | 0 | 12 |
-| v3 | gpt-5-nano  | 20 | + verify-before-cite | **10** | 0 | 10 |
+| v1 | gpt-4o-mini | 6  | original prompt                                       | 8 | 1 | 11 |
+| v2 | gpt-5-nano  | 10 | + verify-before-cite                                  | 8 | 0 | 12 |
+| v3 | gpt-5-nano  | 20 | + verify-before-cite                                  | 10 | 0 | 10 |
+| **v4** | **gpt-5** | **20** | **+ verify + anti-loop + re-rank-by-callers** | **13** | **1** | **6** |
 
-v3 is the current best. +25% relative improvement over v1, with a categorically better failure profile (zero confidently-wrong answers).
+**v4 is the current best at 13/20 — a +62% relative lift over v1.** Three of v4's wins (q01, q02, q10) never landed in any previous run.
 
 ## Failure-mode evolution
 
-| failure mode | v1 | v2 | v3 |
-|---|---|---|---|
-| Confidently cited a wrong-but-nearby symbol | 4 | 0 | **0** |
-| Gave up after 3-5 search attempts | 4 | 0 | **0** |
-| Truncated mid-investigation | 3 | 12 | **10** |
+| failure mode | v1 | v2 | v3 | v4 |
+|---|---|---|---|---|
+| Confidently cited a wrong-but-nearby symbol | 4 | 0 | 0 | **0** |
+| Gave up after few search attempts | 4 | 0 | 0 | **0** |
+| Truncated mid-investigation | 3 | 12 | 10 | **6** |
 
-The verify-before-cite rule + gpt-5-nano's stronger instruction-following eliminated the worst failure category (wrong-with-confidence). Bumping MAX_TURNS from 6 to 20 recovered enough budget to convert 2 of those truncations into wins. The remaining 10 truncations split into two distinct patterns described below.
+Zero confidently-wrong answers across v2/v3/v4. Every v4 miss is an honest "still investigating" — the correct failure profile for a real developer tool.
 
-## v3 remaining failures: two patterns
+## What changed between runs
 
-### Search-loop (5 questions: q02, q10, q11, q16, q20)
+- **v2:** `gpt-5-nano`, MAX_TURNS=10, system prompt added "verify before citing" rule. Eliminated the wrong-nearby and give-up patterns; everything else became truncation.
+- **v3:** Same model + prompt, MAX_TURNS=20. Bigger budget recovered 2 truncations into wins.
+- **v4:** Switched to `gpt-5`, added anti-search-loop prompt rule, added re-rank-by-caller-count to `find_symbol` (weight 0.15 on `log1p(callers)`). Recovered 3 more.
 
-Agent runs 15-20 `find_symbol` calls with zero `read_source` calls. Keeps refining the query phrasing without ever verifying any candidate hit. The system prompt's "verify before cite" rule is followed too literally — the agent never picks a candidate to verify, so it never makes progress.
+## v4 remaining failures
 
-The fix is a prompt tweak: "if `find_symbol` returns similar hits across two consecutive queries, stop searching — pick the best candidate and `read_source` on it." Not in v3, easy to add.
-
-### Exploration-loop (5 questions: q01, q12, q17, q18, q19)
-
-Agent mixes `find_symbol` and `read_source` calls, genuinely exploring the graph. Runs out of turns mid-investigation. These are the genuinely hardest questions in the set (multi-hop reasoning, less obvious starting points). At 20 turns the agent is making progress but the verification chain is longer than the budget allows.
-
-The fix is more compute — either MAX_TURNS=30+ or a stronger model.
+6 truncations + 1 partial. All 6 ✗s are hard multi-hop questions where the agent was genuinely exploring with mixed `find_symbol` + `read_source` calls and ran out of the 20-turn budget. q18 partial is an eval-side issue: the question wording matches `run_in_threadpool` (what the agent cited) better than `contextmanager_in_threadpool` (the expected symbol).
 
 ## Per-question results
 
-| id | difficulty | v1 (4o-mini, 6) | v2 (gpt-5-nano, 10) | v3 (gpt-5-nano, 20) |
-|----|-----------|-----------------|----------------------|----------------------|
-| q01 | easy   | ✗ gave up        | ✗ truncated          | ✗ exploration-loop   |
-| q02 | easy   | ✗ gave up        | ✗ truncated          | ✗ search-loop        |
-| q03 | easy   | ✅               | ✅                   | ✅                   |
-| q04 | easy   | ✅               | ✅                   | ✅                   |
-| q05 | easy   | ✅               | ✅                   | ✅                   |
-| q06 | easy   | ✅               | ✅                   | ✅ (0 tool calls — priors) |
-| q07 | easy   | ✗ wrong-nearby   | ✅                   | ✅                   |
-| q08 | easy   | ✅               | ✅                   | ✅                   |
-| q09 | medium | ✅               | ✅                   | ✅                   |
-| q10 | medium | ✗ gave up        | ✗ truncated          | ✗ search-loop        |
-| q11 | medium | ✗ wrong-nearby   | ✗ truncated          | ✗ search-loop        |
-| q12 | medium | ✗ truncated      | ✗ truncated          | ✗ exploration-loop   |
-| q13 | medium | ✗ gave up        | ✗ truncated          | ✅ **new win**       |
-| q14 | medium | ✅               | ✅                   | ✅                   |
-| q15 | medium | ✅               | ✗ truncated          | ✅                   |
-| q16 | medium | ✗ wrong-nearby   | ✗ truncated          | ✗ search-loop        |
-| q17 | hard   | ✗ truncated      | ✗ truncated          | ✗ exploration-loop   |
-| q18 | hard   | partial          | ✗ truncated          | ✗ exploration-loop   |
-| q19 | hard   | ✗ wrong-nearby   | ✗ truncated          | ✗ exploration-loop   |
-| q20 | hard   | ✗ truncated      | ✗ truncated          | ✗ search-loop        |
-
-## Concrete next improvements (not landed)
-
-1. **Anti-search-loop prompt rule:** "If find_symbol returns similar hits across two consecutive queries, stop searching and read_source on the best candidate." Targets the 5 search-loop failures. One-line change.
-2. **Bump MAX_TURNS further (20 → 30):** Targets the 5 exploration-loop failures. May recover 2-3.
-3. **Use a stronger model (gpt-4o or claude-sonnet):** Plausibly recovers most exploration-loops and improves search efficiency. ~10x cost.
-
-Plausible ceiling for these three combined: 15-17 / 20.
+| id | difficulty | v1 (4o-mini, 6) | v2 (gpt-5-nano, 10) | v3 (gpt-5-nano, 20) | v4 (gpt-5, 20, +re-rank) |
+|----|-----------|-----------------|----------------------|----------------------|---------------------------|
+| q01 | easy   | ✗ gave up        | ✗ truncated          | ✗ exploration-loop   | ✅ **new win**           |
+| q02 | easy   | ✗ gave up        | ✗ truncated          | ✗ search-loop        | ✅ **new win**           |
+| q03 | easy   | ✅               | ✅                   | ✅                   | ✅                        |
+| q04 | easy   | ✅               | ✅                   | ✅                   | ✅                        |
+| q05 | easy   | ✅               | ✅                   | ✅                   | ✅                        |
+| q06 | easy   | ✅               | ✅                   | ✅                   | ✅                        |
+| q07 | easy   | ✗ wrong-nearby   | ✅                   | ✅                   | ✅                        |
+| q08 | easy   | ✅               | ✅                   | ✅                   | ✅                        |
+| q09 | medium | ✅               | ✅                   | ✅                   | ✅                        |
+| q10 | medium | ✗ gave up        | ✗ truncated          | ✗ search-loop        | ✅ **new win**           |
+| q11 | medium | ✗ wrong-nearby   | ✗ truncated          | ✗ search-loop        | ✗ truncated               |
+| q12 | medium | ✗ truncated      | ✗ truncated          | ✗ exploration-loop   | ✗ truncated               |
+| q13 | medium | ✗ gave up        | ✗ truncated          | ✅                   | ✅                        |
+| q14 | medium | ✅               | ✅                   | ✅                   | ✅                        |
+| q15 | medium | ✅               | ✗ truncated          | ✅                   | ✅                        |
+| q16 | medium | ✗ wrong-nearby   | ✗ truncated          | ✗ search-loop        | ✗ truncated               |
+| q17 | hard   | ✗ truncated      | ✗ truncated          | ✗ exploration-loop   | ✗ truncated               |
+| q18 | hard   | partial          | ✗ truncated          | ✗ exploration-loop   | partial                   |
+| q19 | hard   | ✗ wrong-nearby   | ✗ truncated          | ✗ exploration-loop   | ✗ truncated               |
+| q20 | hard   | ✗ truncated      | ✗ truncated          | ✗ search-loop        | ✗ truncated               |
 
 ## How to re-run
 
 ```bash
 source .venv/bin/activate
-OPENAI_API_KEY=sk-... python eval/run_codescope.py --model gpt-5-nano --out eval/results-<version>.jsonl
+OPENAI_API_KEY=sk-... python eval/run_codescope.py --model gpt-5 --out eval/results-<version>.jsonl
 python eval/auto_score.py
 ```
