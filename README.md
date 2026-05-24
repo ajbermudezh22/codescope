@@ -91,7 +91,7 @@ Per-question scoring goes in [`eval/score.md`](eval/score.md).
 
 ## Origin and attribution
 
-Built on lessons from my Master's thesis at TU Berlin (in collaboration with Siemens). codescope is an independent reimplementation around an agentic retrieval architecture — it shares no code, schema, or naming conventions with the thesis system. The full architectural delta is in [the spec](docs/superpowers/specs/2026-05-23-codescope-design.md#3-architectural-distance-from-thesis).
+Built on lessons from my Master's thesis at TU Berlin (in collaboration with Siemens). codescope is an independent reimplementation around an agentic retrieval architecture — it shares no code, schema, or naming conventions with the thesis system. The full architectural delta is in [the spec](docs/design/specs/2026-05-23-codescope-design.md#3-architectural-distance-from-thesis).
 
 In one line: the thesis was a fixed two-stage chain (vector search → APOC graph expansion → synthesis) over a tree-sitter graph with LLM-enriched file summaries. codescope is a bounded agent loop over an SCIP graph, no enrichment phase, four typed tools, live tool trace.
 
@@ -109,7 +109,7 @@ In one line: the thesis was a fixed two-stage chain (vector search → APOC grap
 
 ## Status
 
-v1.0 — local-only, single Python repo, no incremental re-index, no hosted demo. See [the spec](docs/superpowers/specs/2026-05-23-codescope-design.md#2-goals--non-goals) for the explicit non-goals.
+v1.0 — local-only, single Python repo, no incremental re-index, no hosted demo. See [the spec](docs/design/specs/2026-05-23-codescope-design.md#2-goals--non-goals) for the explicit non-goals.
 
 ## License
 

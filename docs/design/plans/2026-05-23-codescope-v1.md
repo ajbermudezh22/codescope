@@ -1,14 +1,12 @@
 # codescope v1.0 Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
-
 **Goal:** Ship a public, OSS, portfolio-grade repo that lets you chat with a Python codebase using SCIP-precise symbol graphs and a bounded agentic retrieval loop, with a live tool-trace UI as the demo centerpiece.
 
 **Architecture:** Four units. `indexer` ingests a repo via `scip-python` into Kuzu (graph) + LanceDB (vectors), one shot, no LLM calls. `store` exposes 4 typed retrieval tools over those DBs. `agent` is a bounded LiteLLM loop (≤6 turns) that picks among those tools. `web` is FastAPI + React with a WebSocket streaming live tool traces. Layering: `web` → `agent` → `store` → DBs; `indexer` is write-only and independent.
 
 **Tech Stack:** Python 3.11+, `scip-python` (Sourcegraph), Kuzu (embedded graph DB), LanceDB (embedded vector DB), `fastembed` (bge-small-en-v1.5), LiteLLM, FastAPI + WebSockets, Typer CLI, Vite + React + TypeScript + Tailwind, pytest, ruff, mypy.
 
-**Spec:** [`docs/superpowers/specs/2026-05-23-codescope-design.md`](../specs/2026-05-23-codescope-design.md). This plan implements it task-by-task.
+**Spec:** [`docs/design/specs/2026-05-23-codescope-design.md`](../specs/2026-05-23-codescope-design.md). This plan implements it task-by-task.
 
 **TDD discipline:** Every task is *test first*, run-to-fail, then minimal implementation, then run-to-pass, then commit. Skipping the run-to-fail step on Python tasks is grounds for redoing the task.
 

@@ -296,7 +296,7 @@ def run(question: str) -> AsyncIterator[TraceEvent]:
 ### 7.2 LLM provider
 
 LiteLLM client. Default model: `gpt-4o-mini`. CLI flag `--model` accepts
-any LiteLLM model string (`claude-haiku-4-5`, `ollama/llama3.1`, etc.).
+any LiteLLM model string (`gemini/gemini-2.0-flash`, `ollama/llama3.1`, etc.).
 Provider keys read from env vars per LiteLLM convention.
 
 ## 8. UI
