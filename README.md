@@ -103,7 +103,7 @@ In one line: the thesis was a fixed two-stage chain (vector search → APOC grap
 | Graph DB | Kuzu (embedded) | No server, fast, openCypher subset |
 | Vector DB | LanceDB (embedded) | No server, columnar, simple Python API |
 | Embeddings | `bge-small-en-v1.5` via FastEmbed | Local, CPU, 384-dim |
-| LLM client | LiteLLM | Provider-agnostic; works with OpenAI, Anthropic, Ollama |
+| LLM client | LiteLLM | Provider-agnostic; works with OpenAI, Gemini, Ollama |
 | Backend | FastAPI + WebSockets | Streaming-first |
 | Frontend | Vite + React + TS + Tailwind | Small bundle, fast iteration |
 
