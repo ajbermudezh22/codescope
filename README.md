@@ -2,6 +2,10 @@
 
 **Chat with a Python codebase. SCIP-precise symbol graphs + a bounded agentic retrieval loop, with a live tool-trace UI that lets you watch the model reason.**
 
+![codescope demo — q13: which method merges a sub-router's routes into the main app](docs/demo.gif)
+
+> The replay above is a real v4 (gpt-5) session against fastapi. Per-question reasoning traces for the full 20-question eval are in [`eval/results-gpt5-v4.jsonl`](eval/results-gpt5-v4.jsonl).
+
 ```mermaid
 flowchart LR
   subgraph Ingest["Ingest (one shot, no LLM)"]
@@ -17,10 +21,6 @@ flowchart LR
     T --> D
   end
 ```
-
-![codescope demo — q13: which method merges a sub-router's routes into the main app](docs/demo.gif)
-
-> The replay above is a real v4 (gpt-5) session against fastapi. Per-question reasoning traces for the full 20-question eval are in [`eval/results-gpt5-v4.jsonl`](eval/results-gpt5-v4.jsonl).
 
 ## Why this exists
 
