@@ -18,7 +18,9 @@ flowchart LR
   end
 ```
 
-> Demo video coming soon. In the meantime, the per-question reasoning traces in [`eval/results-gpt5-v4.jsonl`](eval/results-gpt5-v4.jsonl) show exactly what the agent does on real fastapi questions.
+![codescope demo — q13: which method merges a sub-router's routes into the main app](docs/demo.gif)
+
+> The replay above is a real v4 (gpt-5) session against fastapi. Per-question reasoning traces for the full 20-question eval are in [`eval/results-gpt5-v4.jsonl`](eval/results-gpt5-v4.jsonl).
 
 ## Why this exists
 
