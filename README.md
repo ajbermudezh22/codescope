@@ -157,6 +157,10 @@ loop answers 19/20 (one partial). The delta *is* the symbol graph + bounded agen
 gives the correct symbol in `.`-dotted form where the expected string uses SCIP `#` notation.
 Reproduce the baseline with `python eval/run_naive.py`.)
 
+Companion study: [codescope-slm](https://github.com/ajbermudezh22/codescope-slm) distills
+this loop's query-planning step into an on-device 1.5B (MLX LoRA) — and ablates whether
+the step needed a big model at all.
+
 **v4: 65% correct, +62% relative improvement over v1**, with zero confidently-wrong answers across all four runs. Every miss in v2/v3/v4 is an honest "still investigating, ran out of turns" — not "wrong answer with confidence." That's the failure profile a real developer tool should have.
 
 ### What each iteration changed (and why)
