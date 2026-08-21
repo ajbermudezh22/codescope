@@ -27,13 +27,17 @@ def chat(
     db: Path = typer.Option(Path(".codescope"), help="Path to indexed DB."),
     host: str = typer.Option("127.0.0.1"),
     port: int = typer.Option(8000),
+    model: str = typer.Option(
+        "gpt-4o-mini",
+        help="Any LiteLLM model string, e.g. anthropic/claude-opus-5 or gpt-4o-mini.",
+    ),
 ) -> None:
-    """Launch the chat server. (Wired up in W2.)"""
+    """Launch the chat server."""
     import uvicorn
 
     from codescope.web.app import build_app
 
-    uvicorn.run(build_app(db), host=host, port=port)
+    uvicorn.run(build_app(db, model=model), host=host, port=port)
 
 
 if __name__ == "__main__":

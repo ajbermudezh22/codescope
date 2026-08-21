@@ -106,8 +106,9 @@ pip install -e ".[dev]"
 # 2. SCIP indexer (Node.js tool from Sourcegraph)
 npm install -g @sourcegraph/scip-python
 
-# 3. Model API key — defaults to OpenAI
-export OPENAI_API_KEY=sk-...
+# 3. Model API key — any LiteLLM provider works
+export OPENAI_API_KEY=sk-...        # default model gpt-4o-mini
+export ANTHROPIC_API_KEY=sk-ant-... # for --model anthropic/claude-opus-5
 ```
 
 Tested on Python 3.12 and Node 25 on macOS.
@@ -120,6 +121,9 @@ codescope index /path/to/your/repo
 
 # Launch the chat server.
 codescope chat
+
+# ...or with any LiteLLM model string:
+codescope chat --model anthropic/claude-opus-5
 ```
 
 Then run the dev frontend in a second terminal:
