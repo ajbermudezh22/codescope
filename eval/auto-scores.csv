@@ -1,4 +1,24 @@
 run,id,auto_grade,tool_calls,note
+agent-opus5,q01,ok,10,expected qualified name verbatim
+agent-opus5,q02,ok,12,expected qualified name verbatim
+agent-opus5,q03,ok,5,expected qualified name verbatim
+agent-opus5,q04,ok,4,expected qualified name verbatim
+agent-opus5,q05,ok,5,expected qualified name verbatim
+agent-opus5,q06,ok,6,expected qualified name verbatim
+agent-opus5,q07,ok,5,expected qualified name verbatim
+agent-opus5,q08,ok,4,expected qualified name verbatim
+agent-opus5,q09,ok,5,expected qualified name verbatim
+agent-opus5,q10,x,11,expected symbol not in answer
+agent-opus5,q11,ok,11,expected qualified name verbatim
+agent-opus5,q12,ok,11,expected qualified name verbatim
+agent-opus5,q13,ok,6,expected qualified name verbatim
+agent-opus5,q14,ok,7,expected qualified name verbatim
+agent-opus5,q15,ok,8,expected qualified name verbatim
+agent-opus5,q16,ok,8,expected qualified name verbatim
+agent-opus5,q17,ok,14,expected qualified name verbatim
+agent-opus5,q18,ok,15,expected qualified name verbatim
+agent-opus5,q19,partial,10,only last segment '_merge_lifespan_context' appears
+agent-opus5,q20,ok,30,expected qualified name verbatim
 codescope,q01,x,5,expected symbol not in answer
 codescope,q02,x,3,expected symbol not in answer
 codescope,q03,ok,1,expected qualified name verbatim
@@ -79,3 +99,23 @@ gpt5-v4,q17,x,20,truncated or empty
 gpt5-v4,q18,x,16,expected symbol not in answer
 gpt5-v4,q19,x,20,truncated or empty
 gpt5-v4,q20,x,20,truncated or empty
+naive-opus5,q01,x,0,expected symbol not in answer
+naive-opus5,q02,ok,0,expected qualified name verbatim
+naive-opus5,q03,ok,0,expected qualified name verbatim
+naive-opus5,q04,ok,0,expected qualified name verbatim
+naive-opus5,q05,ok,0,expected qualified name verbatim
+naive-opus5,q06,ok,0,expected qualified name verbatim
+naive-opus5,q07,x,0,expected symbol not in answer
+naive-opus5,q08,ok,0,expected qualified name verbatim
+naive-opus5,q09,ok,0,expected qualified name verbatim
+naive-opus5,q10,x,0,expected symbol not in answer
+naive-opus5,q11,x,0,expected symbol not in answer
+naive-opus5,q12,x,0,expected symbol not in answer
+naive-opus5,q13,x,0,expected symbol not in answer
+naive-opus5,q14,ok,0,expected qualified name verbatim
+naive-opus5,q15,ok,0,expected qualified name verbatim
+naive-opus5,q16,x,0,expected symbol not in answer
+naive-opus5,q17,x,0,expected symbol not in answer
+naive-opus5,q18,x,0,expected symbol not in answer
+naive-opus5,q19,x,0,expected symbol not in answer
+naive-opus5,q20,x,0,expected symbol not in answer

@@ -106,8 +106,9 @@ pip install -e ".[dev]"
 # 2. SCIP indexer (Node.js tool from Sourcegraph)
 npm install -g @sourcegraph/scip-python
 
-# 3. Model API key — defaults to OpenAI
-export OPENAI_API_KEY=sk-...
+# 3. Model API key — any LiteLLM provider works
+export OPENAI_API_KEY=sk-...        # default model gpt-4o-mini
+export ANTHROPIC_API_KEY=sk-ant-... # for --model anthropic/claude-opus-5
 ```
 
 Tested on Python 3.12 and Node 25 on macOS.
@@ -120,6 +121,9 @@ codescope index /path/to/your/repo
 
 # Launch the chat server.
 codescope chat
+
+# ...or with any LiteLLM model string:
+codescope chat --model anthropic/claude-opus-5
 ```
 
 Then run the dev frontend in a second terminal:
@@ -143,6 +147,15 @@ For a production build, `npm run build` produces a static bundle under `frontend
 | v2 | gpt-5-nano  | 10 | + verify-before-cite                                  | 8  | 0 | 12 |
 | v3 | gpt-5-nano  | 20 | + verify-before-cite                                  | 10 | 0 | 10 |
 | **v4** | **gpt-5** | **20** | **+ verify + anti-loop + re-rank-by-callers** | **13** | **1** | **6** |
+| **v5** | **claude-opus-5** | **20** | **same harness, `--model anthropic/claude-opus-5`** | **19** | **1** | **0** |
+| naive baseline | claude-opus-5 | — | top-8 vector RAG over the same index, no graph, no agent | 9 | 0 | 11 |
+
+**v5: 95% correct — and the naive-RAG ablation is the architecture's receipt.** Same model,
+same embedder, same indexed corpus: retrieval-only answers 9/20, the graph-guided agent
+loop answers 19/20 (one partial). The delta *is* the symbol graph + bounded agent loop.
+(v5 scored with the same convention as v4: auto-scored, then hand-reviewed — one v5 answer
+gives the correct symbol in `.`-dotted form where the expected string uses SCIP `#` notation.
+Reproduce the baseline with `python eval/run_naive.py`.)
 
 **v4: 65% correct, +62% relative improvement over v1**, with zero confidently-wrong answers across all four runs. Every miss in v2/v3/v4 is an honest "still investigating, ran out of turns" — not "wrong answer with confidence." That's the failure profile a real developer tool should have.
 
