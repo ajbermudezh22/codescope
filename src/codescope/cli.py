@@ -17,9 +17,18 @@ def index(
     repo: Path = typer.Argument(..., exists=True, file_okay=False, dir_okay=True),
     db: Path = typer.Option(Path(".codescope"), help="Where to write the index."),
     force: bool = typer.Option(False, help="Overwrite existing index."),
+    synthesize_docs: bool = typer.Option(
+        False, help="LLM-generate docs for undocumented symbols (needs a model API key)."
+    ),
+    synth_model: str = typer.Option(
+        "anthropic/claude-haiku-4-5", help="LiteLLM model for doc synthesis."
+    ),
 ) -> None:
-    """Index a Python repository."""
-    index_repo(repo_path=repo, db_dir=db, force=force)
+    """Index a Python repository. Zero-LLM unless --synthesize-docs is passed."""
+    index_repo(
+        repo_path=repo, db_dir=db, force=force,
+        synthesize_docs=synthesize_docs, synth_model=synth_model,
+    )
 
 
 @app.command()
