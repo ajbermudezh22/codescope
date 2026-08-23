@@ -148,7 +148,19 @@ For a production build, `npm run build` produces a static bundle under `frontend
 | v3 | gpt-5-nano  | 20 | + verify-before-cite                                  | 10 | 0 | 10 |
 | **v4** | **gpt-5** | **20** | **+ verify + anti-loop + re-rank-by-callers** | **13** | **1** | **6** |
 | **v5** | **claude-opus-5** | **20** | **same harness, `--model anthropic/claude-opus-5`** | **19** | **1** | **0** |
-| naive baseline | claude-opus-5 | — | top-8 vector RAG over the same index, no graph, no agent | 9 | 0 | 11 |
+| naive baseline | claude-opus-5 | — | top-8 vector RAG over the same index, no graph, no agent | 10 | 0 | 10 |
+| **v6** | **claude-opus-5** | **20** | **+ `--synthesize-docs` index (ceiling lifted 10→20)** | **20** | **0** | **0** |
+| naive on v6 index | claude-opus-5 | — | top-8 vector RAG over the synthesized index | 18 | 0 | 2 |
+
+**v6: 20/20 after measuring — and lifting — the retrieval ceiling.** The v5 ablation
+exposed that only 10 of 20 eval targets were even in the vector corpus (the index embeds
+documented symbols only). `codescope index --synthesize-docs` fixes the input instead of
+the model: an LLM writes docstrings for undocumented main-package symbols at index time
+(478 for fastapi, corpus 661→1,139, opt-in so default indexing stays zero-LLM). Result:
+naive RAG jumps 10→18 and the agent closes to a perfect 20/20. Retrieval-side evidence
+in [codescope-slm](https://github.com/ajbermudezh22/codescope-slm): verbatim-question
+hit@5 goes 9→15 on the new index, and planner quality suddenly matters (claude-planned
+calls hit 19/20 vs 15/20 verbatim — on the starved corpus they tied).
 
 **v5: 95% correct — and the naive-RAG ablation is the architecture's receipt.** Same model,
 same embedder, same indexed corpus: retrieval-only answers 9/20, the graph-guided agent

@@ -34,7 +34,10 @@ def grade(expected: str, answer: str) -> tuple[str, str]:
         return "x", "truncated or empty"
     if expected in answer:
         return "ok", "expected qualified name verbatim"
-    last = expected.rsplit(".", 1)[-1].lstrip("#")
+    # SCIP writes methods as Class#method; answers naturally use dotted form.
+    if expected.replace("#", ".") in answer.replace("#", "."):
+        return "ok", "expected qualified name (dotted-form match)"
+    last = expected.replace("#", ".").rsplit(".", 1)[-1]
     if last and last in answer:
         return "partial", f"only last segment '{last}' appears"
     return "x", "expected symbol not in answer"
